@@ -5,13 +5,13 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Kiri</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <script>
 tailwind.config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+        sans: ['"Inter"', 'sans-serif'],
       },
       colors: {
         brand: {
@@ -28,7 +28,7 @@ tailwind.config = {
 </script>
 <style>
 body {
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   background: radial-gradient(circle at 50% 40%, #0D3824 0%, #061C12 50%, #020906 100%);
   min-height: 100vh;
   margin: 0;
@@ -142,13 +142,11 @@ body {
 
   <aside class="w-full lg:w-[260px] xl:w-[275px] bg-brand-sidebar p-5 lg:p-6 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-emerald-950/40 select-none shrink-0">
     <div class="space-y-6">
-      <div class="flex items-center gap-3 px-1">
-        <div class="flex items-end gap-[3px] h-6">
-          <span class="w-[4px] h-3.5 bg-emerald-500 rounded-full"></span>
-          <span class="w-[4px] h-6 bg-emerald-400 rounded-full"></span>
-          <span class="w-[4px] h-4 bg-emerald-500 rounded-full"></span>
+      <div class="flex items-center gap-3 px-1 mb-2">
+        <div class="w-8 h-8 rounded-lg overflow-hidden shrink-0 shadow-md border border-white/10">
+          <img src="../images/logo.png" class="w-full h-full object-cover"/>
         </div>
-        <span class="text-white text-xl font-bold tracking-tight">Kiri</span>
+        <span class="text-white text-xl font-black tracking-tight drop-shadow-sm">Kiri</span>
       </div>
 
       <div class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl glass-pill">
@@ -220,26 +218,6 @@ body {
           </button>
         </div>
       </header>
-
-      <div id="recovery-banner" class="hidden bg-[#12231b] text-white rounded-2xl p-4 flex items-center justify-between border border-emerald-800/40 shadow-sm">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-xl bg-emerald-500 flex items-center justify-center text-black font-bold text-sm">
-            !
-          </div>
-          <div>
-            <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-300">Resume Previous Search</h4>
-            <p id="recovery-text" class="text-xs text-gray-300 mt-0.5">An interrupted task is available.</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-2">
-          <button onclick="window.resumeActive()" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs transition-all shadow-sm">
-            Resume Now
-          </button>
-          <button onclick="window.dismissActive()" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-medium transition-all">
-            Dismiss
-          </button>
-        </div>
-      </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <article class="bg-gradient-to-br from-[#10231a] to-[#0a1711] rounded-[20px] p-6 text-white shadow-xl flex items-center justify-between border border-emerald-800/50 relative overflow-hidden ring-1 ring-white/5">
@@ -346,8 +324,13 @@ body {
             <input id="twogis-city" type="text" class="w-full bg-gray-50 border border-gray-200/80 rounded-xl px-4 py-3.5 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-inner" value="Dubai"/>
           </div>
           <div>
-            <label class="block text-xs font-extrabold text-gray-700 uppercase tracking-wider mb-2.5">Keyword</label>
-            <input id="twogis-query" type="text" class="w-full bg-gray-50 border border-gray-200/80 rounded-xl px-4 py-3.5 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-inner" value="Software"/>
+            <label class="block text-xs font-extrabold text-gray-700 uppercase tracking-wider mb-2.5">Keyword or Batch File</label>
+            <div class="flex gap-2">
+              <input id="twogis-query" type="text" class="flex-1 w-full bg-gray-50 border border-gray-200/80 rounded-xl px-4 py-3.5 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-inner" value="Software"/>
+              <button onclick="window.pickFileTwoGis()" class="px-4 py-3.5 rounded-xl bg-gradient-to-br from-gray-800 to-black hover:from-black hover:to-black text-white font-bold text-xs transition-all shadow-md border border-gray-700/50">
+                Browse
+              </button>
+            </div>
           </div>
         </div>
 
@@ -528,7 +511,6 @@ function showDashboard(userData) {
   document.getElementById('stat-owner').innerText = userData.owner || 'Reinhart';
   document.getElementById('stat-expiry').innerText = userData.expires || 'Active';
 
-  checkCheckpoint();
   refreshStats();
 }
 
@@ -540,29 +522,6 @@ function showAuthScreen(errorMsg = '') {
   if (errorMsg) {
     document.getElementById('auth-error').innerText = errorMsg;
   }
-}
-
-async function checkCheckpoint() {
-  const cp = await window.api.getActiveCheckpoint();
-  if (cp && cp.target) {
-    const banner = document.getElementById('recovery-banner');
-    document.getElementById('recovery-text').innerText = `${cp.engine.toUpperCase()}: ${cp.target} at query ${cp.lastStep || 1}`;
-    banner.classList.remove('hidden');
-  }
-}
-
-async function resumeActive() {
-  document.getElementById('recovery-banner').classList.add('hidden');
-  const cp = await window.api.getActiveCheckpoint();
-  if (cp) {
-    resumeTask(cp);
-  }
-}
-
-async function dismissActive() {
-  document.getElementById('recovery-banner').classList.add('hidden');
-  await window.api.dismissCheckpoint();
-  appendLog('Saved task dismissed.');
 }
 
 async function refreshStats() {
@@ -585,18 +544,25 @@ async function loadHistoryList() {
   container.innerHTML = '';
   history.forEach(item => {
     const card = document.createElement('div');
+    const displayTarget = (item.target || '').split('\\').pop().split('/').pop();
+    
     card.className = 'bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center justify-between';
     card.innerHTML = `
       <div>
-        <div class="flex items-center gap-2">
-          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black text-white uppercase">${item.engine}</span>
-          <h4 class="text-xs font-bold text-gray-900 truncate max-w-xs sm:max-w-md">${item.target}</h4>
+        <div class="flex items-center gap-2.5">
+          <span class="text-[10px] font-extrabold px-2.5 py-1 rounded-md bg-gray-900 text-white uppercase tracking-wider">${item.engine}</span>
+          <h4 class="text-sm font-bold text-gray-900 truncate max-w-[200px] sm:max-w-md" title="${item.target}">${displayTarget}</h4>
         </div>
-        <p class="text-[11px] text-gray-500 mt-1">Saved: <b class="text-gray-900">${item.totalSaved || 0}</b> leads | Step: <b class="text-gray-900">${item.lastStep || 1}</b></p>
+        <p class="text-[12px] text-gray-500 mt-1.5 font-medium">Saved: <b class="text-gray-900">${item.totalSaved || 0}</b> leads | Step: <b class="text-gray-900">${item.lastStep || 1}</b></p>
       </div>
-      <button onclick='window.resumeTask(${JSON.stringify(item)})' class="px-4 py-2 rounded-xl bg-black hover:bg-neutral-800 text-white font-bold text-xs transition-all">
-        Resume
-      </button>
+      <div class="flex gap-2">
+        <button onclick='window.openHistoryData(${JSON.stringify(item)})' class="px-4 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/60 font-bold text-[11px] transition-all shadow-sm">
+          Open File
+        </button>
+        <button onclick='window.resumeTask(${JSON.stringify(item)})' class="px-5 py-2.5 rounded-xl bg-black hover:bg-neutral-800 text-white font-bold text-[11px] transition-all shadow-md">
+          Resume
+        </button>
+      </div>
     `;
     container.appendChild(card);
   });
@@ -660,13 +626,13 @@ async function resumeTask(item) {
   } else if (item.engine === '2gis') {
     const parts = (item.target || '').split(':');
     const city = parts[0] || 'Dubai';
-    const query = parts[1] || '';
-    appendLog(`Resuming 2GIS: ${city} - ${query} from page ${item.lastStep || 1}...`);
+    const query = parts.slice(1).join(':') || '';
+    appendLog(`Resuming 2GIS: ${city} - ${query} from query ${item.lastStep || 0}...`);
     await window.api.startTwoGis({
       city,
       query,
       cap: item.cap || 0,
-      startPage: item.lastStep || 1,
+      startIdx: item.lastStep || 0,
       initialSaved: item.totalSaved || 0
     });
   }
@@ -682,6 +648,28 @@ async function pickFile() {
   if (filePath) {
     document.getElementById('gmaps-input').value = filePath;
   }
+}
+
+async function pickFileTwoGis() {
+  const filePath = await window.api.openFile();
+  if (filePath) {
+    document.getElementById('twogis-query').value = filePath;
+  }
+}
+
+async function openHistoryData(item) {
+  await window.api.openHistoryData(item);
+}
+
+async function pickFileTwoGis() {
+  const filePath = await window.api.openFile();
+  if (filePath) {
+    document.getElementById('twogis-query').value = filePath;
+  }
+}
+
+async function openHistoryData(item) {
+  await window.api.openHistoryData(item);
 }
 
 async function logout() {

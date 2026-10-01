@@ -36,16 +36,48 @@ function buildSearchUrl(city, query) {
 }
 
 async function runTwoGis(config, control, log) {
-  const { city, query, cap = 0, startPage = 1, initialSaved = 0 } = config;
-  const targetLabel = `${city}:${query}`;
+  const { city, query, cap = 0, initialSaved = 0 } = config;
+  const { loadTargetList, getExportsDir, updateProgress, saveHistoryItem } = require('./storage');
+  
+  const queries = loadTargetList(query);
+  let startIdx = Number(config.startIdx) || 0;
+  if (startIdx >= queries.length) {
+    log(`All ${queries.length} queries completed. Resetting to query 1.`);
+    startIdx = 0;
+  }
 
+  const targetLabel = `${city}:${path.basename(query)}`;
   const safeName = targetLabel.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
   const csvPath = path.join(getExportsDir(), `2gis_${safeName}.csv`);
-  const fileExists = fs.existsSync(csvPath);
+  const seenPhones = new Set();
+  const seenTitles = new Set();
+
+  if (fileExists) {
+    try {
+      const content = fs.readFileSync(csvPath, 'utf8');
+      const lines = content.split(/\r?\n/);
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line.trim()) continue;
+        const matchTitle = line.match(/^[^,]*,([^,]+)/);
+        if (matchTitle) {
+          const t = matchTitle[1].replace(/"/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+          if (t) seenTitles.add(t);
+        }
+        const phones = line.match(/\+?\d[\d \-]{6,}\d/g);
+        if (phones) {
+          for (const p of phones) {
+            seenPhones.add(p.replace(/[^\d]/g, ''));
+          }
+        }
+      }
+    } catch {}
+  }
 
   const csvWriter = createCsvWriter({
     path: csvPath,
     header: [
+      { id: 'query', title: 'Query' },
       { id: 'title', title: 'Business Name' },
       { id: 'category', title: 'Category' },
       { id: 'phone_1', title: 'Primary Phone' },
@@ -56,15 +88,19 @@ async function runTwoGis(config, control, log) {
     append: fileExists
   });
 
+  if (!fileExists) {
+    fs.writeFileSync(csvPath, '\uFEFFQuery,Business Name,Category,Primary Phone,Secondary Phone,Website,Address\n', 'utf8');
+  }
+
   saveHistoryItem({
     engine: '2gis',
     target: targetLabel,
-    lastStep: startPage,
+    lastStep: startIdx,
     totalSaved: initialSaved,
     date: new Date().toISOString()
   });
 
-  log(`Searching 2GIS in ${city} for: ${query}`);
+  log(`Searching 2GIS in ${city} for ${queries.length} queries`);
   log(`Saving leads to: ${csvPath}`);
 
   const browser = await getBrowser();
@@ -72,16 +108,30 @@ async function runTwoGis(config, control, log) {
   const page = await context.newPage();
 
   let totalSaved = initialSaved;
-  let currentPage = Number(startPage) || 1;
 
   try {
-    const url = buildSearchUrl(city, query);
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 35000 });
-    await page.waitForTimeout(3000);
-
-    while (currentPage <= 150) {
+    for (let i = startIdx; i < queries.length; i++) {
       if (control.cancelled) {
         log('Task paused by user.');
+        break;
+      }
+      if (cap > 0 && totalSaved >= cap) {
+        log(`Target limit of ${cap} reached.`);
+        break;
+      }
+
+      const q = queries[i];
+      log(`[${i + 1}/${queries.length}] Processing: ${q}`);
+      
+      const url = buildSearchUrl(city, q);
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 35000 }).catch(()=>{});
+      await page.waitForTimeout(3000);
+
+      let currentPage = 1;
+      let hasNextPage = true;
+
+    while (currentPage <= 150 && hasNextPage) {
+      if (control.cancelled) {
         break;
       }
 
@@ -164,25 +214,37 @@ async function runTwoGis(config, control, log) {
           }
 
           let category = lines.length > 1 ? lines[1] : 'General Business';
+          
+          const titleKey = title.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const p1Digits = foundPhones[0] ? foundPhones[0].replace(/[^\d]/g, '') : '';
+          const p2Digits = foundPhones[1] ? foundPhones[1].replace(/[^\d]/g, '') : '';
 
-          await csvWriter.writeRecords([{
-            title,
-            category,
-            phone_1: foundPhones[0] || 'None',
-            phone_2: foundPhones[1] || 'None',
-            website,
-            address
-          }]);
+          if ((titleKey && seenTitles.has(titleKey)) || 
+              (p1Digits && seenPhones.has(p1Digits)) || 
+              (p2Digits && seenPhones.has(p2Digits))) {
+            log(`Skipped duplicate: ${title.substring(0, 22)}`);
+          } else {
+            await csvWriter.writeRecords([{
+              query: q,
+              title,
+              category,
+              phone_1: foundPhones[0] || 'None',
+              phone_2: foundPhones[1] || 'None',
+              website,
+              address
+            }]);
 
-          totalSaved++;
-          log(`Saved #${totalSaved}: ${title.substring(0, 22)} | ${foundPhones[0] || 'None'}`);
+            totalSaved++;
+            if (titleKey) seenTitles.add(titleKey);
+            if (p1Digits) seenPhones.add(p1Digits);
+            if (p2Digits) seenPhones.add(p2Digits);
+            log(`Saved #${totalSaved}: ${title.substring(0, 22)} | ${foundPhones[0] || 'None'}`);
+          }
 
           await page.keyboard.press('Escape');
           await page.waitForTimeout(200);
         } catch {}
       }
-
-      updateProgress('2gis', targetLabel, currentPage + 1, totalSaved);
 
       const nextBtn = await page.$('div._5ocwns div:last-child, div[class*="pagination"] div:last-child');
       if (nextBtn) {
@@ -191,10 +253,13 @@ async function runTwoGis(config, control, log) {
         currentPage++;
         await page.waitForTimeout(2500);
       } else {
-        log('Reached the final catalog page.');
-        break;
+        log(`Finished scraping query: ${q}`);
+        hasNextPage = false;
       }
     }
+    
+    updateProgress('2gis', targetLabel, i + 1, totalSaved);
+  }
   } finally {
     try {
       await browser.close();

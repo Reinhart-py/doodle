@@ -98,6 +98,24 @@ ipcMain.handle('shell:open-link', async (event, url) => {
   await shell.openExternal(url);
 });
 
+ipcMain.handle('shell:open-history', async (event, item) => {
+  const { getExportsDir } = require('./src/storage');
+  let safeName;
+  if (item.engine === '2gis') {
+    const parts = (item.target || '').split(':');
+    const city = parts[0] || 'Dubai';
+    const queryPath = parts.slice(1).join(':') || '';
+    const qName = path.basename(queryPath);
+    safeName = `${city}:${qName}`.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
+  } else {
+    safeName = path.basename(item.target || '').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 24);
+  }
+  const csvPath = path.join(getExportsDir(), `${item.engine}_${safeName}.csv`);
+  if (fs.existsSync(csvPath)) {
+    await shell.openPath(csvPath);
+  }
+});
+
 ipcMain.handle('scraper:start-gmaps', async (event, config) => {
   if (activeTask && activeTask.isRunning) {
     return { success: false, message: 'A task is already running.' };

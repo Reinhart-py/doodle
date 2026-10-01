@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('api', {
   dismissCheckpoint: () => ipcRenderer.invoke('storage:dismiss-checkpoint'),
   openFile: () => ipcRenderer.invoke('dialog:open-file'),
   openLink: (url) => ipcRenderer.invoke('shell:open-link', url),
+  openHistoryData: (item) => ipcRenderer.invoke('shell:open-history', item),
   startGmaps: (config) => ipcRenderer.invoke('scraper:start-gmaps', config),
   startTwoGis: (config) => ipcRenderer.invoke('scraper:start-twogis', config),
   stopScraper: () => ipcRenderer.invoke('scraper:stop'),
