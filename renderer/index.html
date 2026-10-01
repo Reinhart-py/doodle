@@ -504,6 +504,11 @@ async function submitAuth() {
   const key = input.value.trim();
   if (!key) return;
 
+  if (!window.api) {
+    errorBox.innerText = '⚠️ You are in a web browser! Please use the actual desktop app window.';
+    return;
+  }
+
   errorBox.innerText = '';
   btn.disabled = true;
   btn.innerText = 'Checking...';
@@ -712,6 +717,10 @@ window.api.onDone(() => {
 
 window.addEventListener('DOMContentLoaded', async () => {
   try {
+    if (!window.api) {
+      showAuthScreen('Preview Mode: Open the Kiri desktop app window to activate.');
+      return;
+    }
     const saved = await window.api.checkSavedLicense();
     if (saved && saved.passed) {
       showDashboard(saved);
