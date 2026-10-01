@@ -564,21 +564,10 @@ async function loadHistoryList() {
 
 function setTaskRunning(running) {
   const stopBtn = document.getElementById('global-stop-btn');
-  const gmBtn = document.getElementById('gmaps-start-btn');
-  const tgBtn = document.getElementById('twogis-start-btn');
-
   if (running) {
     stopBtn.classList.remove('hidden');
-    gmBtn.disabled = true;
-    tgBtn.disabled = true;
-    gmBtn.innerHTML = '<span class="animate-pulse">Generating...</span>';
-    tgBtn.innerHTML = '<span class="animate-pulse">Generating...</span>';
   } else {
     stopBtn.classList.add('hidden');
-    gmBtn.disabled = false;
-    tgBtn.disabled = false;
-    gmBtn.innerText = 'Start Generating';
-    tgBtn.innerText = 'Start Generating';
   }
 }
 

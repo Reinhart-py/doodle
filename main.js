@@ -7,7 +7,7 @@ const { runGmaps } = require('./src/scraper-gmaps');
 const { runTwoGis } = require('./src/scraper-2gis');
 
 let mainWindow = null;
-let activeTask = null;
+let activeTasks = [];
 
 function resolveAppIcon() {
   const pngPath = path.join(__dirname, 'images', 'logo.png');
@@ -117,11 +117,8 @@ ipcMain.handle('shell:open-history', async (event, item) => {
 });
 
 ipcMain.handle('scraper:start-gmaps', async (event, config) => {
-  if (activeTask && activeTask.isRunning) {
-    return { success: false, message: 'A task is already running.' };
-  }
-
-  activeTask = { isRunning: true, cancelled: false };
+  const task = { id: Date.now(), isRunning: true, cancelled: false };
+  activeTasks.push(task);
 
   const logger = (msg) => {
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -129,13 +126,14 @@ ipcMain.handle('scraper:start-gmaps', async (event, config) => {
     }
   };
 
-  runGmaps(config, activeTask, logger)
+  runGmaps(config, task, logger)
     .catch((err) => {
       logger(`Error: ${err.message}`);
     })
     .finally(() => {
-      if (activeTask) activeTask.isRunning = false;
-      if (mainWindow && !mainWindow.isDestroyed()) {
+      task.isRunning = false;
+      activeTasks = activeTasks.filter(t => t.id !== task.id);
+      if (activeTasks.length === 0 && mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('scraper:done');
       }
     });
@@ -144,11 +142,8 @@ ipcMain.handle('scraper:start-gmaps', async (event, config) => {
 });
 
 ipcMain.handle('scraper:start-twogis', async (event, config) => {
-  if (activeTask && activeTask.isRunning) {
-    return { success: false, message: 'A task is already running.' };
-  }
-
-  activeTask = { isRunning: true, cancelled: false };
+  const task = { id: Date.now(), isRunning: true, cancelled: false };
+  activeTasks.push(task);
 
   const logger = (msg) => {
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -156,13 +151,14 @@ ipcMain.handle('scraper:start-twogis', async (event, config) => {
     }
   };
 
-  runTwoGis(config, activeTask, logger)
+  runTwoGis(config, task, logger)
     .catch((err) => {
       logger(`Error: ${err.message}`);
     })
     .finally(() => {
-      if (activeTask) activeTask.isRunning = false;
-      if (mainWindow && !mainWindow.isDestroyed()) {
+      task.isRunning = false;
+      activeTasks = activeTasks.filter(t => t.id !== task.id);
+      if (activeTasks.length === 0 && mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('scraper:done');
       }
     });
@@ -171,8 +167,6 @@ ipcMain.handle('scraper:start-twogis', async (event, config) => {
 });
 
 ipcMain.handle('scraper:stop', async () => {
-  if (activeTask) {
-    activeTask.cancelled = true;
-  }
+  activeTasks.forEach(t => t.cancelled = true);
   return true;
 });
