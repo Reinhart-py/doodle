@@ -355,29 +355,44 @@ async function runGmaps(config, control, log) {
         if (control.cancelled) break;
         if (cap > 0 && totalSaved >= cap) break;
 
-        let visibleHrefs = [];
+        let visibleItems = [];
         try {
-          visibleHrefs = await page.$$eval(
+          visibleItems = await page.$$eval(
             'div[role="feed"] a.hfpxzc, div[role="feed"] a[href*="/maps/place/"]',
-            (elements) => elements.map((el) => el.href).filter(Boolean)
+            (elements) => elements.map((el) => ({ href: el.href, title: el.getAttribute('aria-label') || '' }))
           );
         } catch {
-          visibleHrefs = [];
+          visibleItems = [];
         }
 
-        if (visibleHrefs.length === 0) {
+        if (visibleItems.length === 0) {
           const isDead = await page.$('span:has-text("No more results"), div:has-text("Partial match"), div:has-text("No results found")');
           if (isDead) break;
         }
 
-        const unvisited = visibleHrefs.filter((h) => !seenUrls.has(h));
+        const unvisited = visibleItems.filter((item) => {
+          if (!item.href) return false;
+          if (seenUrls.has(item.href)) return false;
+          
+          if (item.title) {
+            const titleKey = item.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (titleKey && seenTitles.has(titleKey)) {
+              seenUrls.add(item.href); // Mark it so we don't check it again
+              // log(`Fast skipped duplicate: ${item.title}`);
+              return false;
+            }
+          }
+          return true;
+        });
 
         if (unvisited.length > 0) {
           idleScrolls = 0;
 
-          for (const href of unvisited) {
+          for (const item of unvisited) {
             if (control.cancelled) break;
             if (cap > 0 && totalSaved >= cap) break;
+            
+            const href = item.href;
 
             seenUrls.add(href);
 

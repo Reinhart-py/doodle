@@ -208,6 +208,13 @@ async function runTwoGis(config, control, log) {
           if (lines.length === 0) continue;
 
           const title = lines[0];
+          const titleKey = title.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+          if (titleKey && seenTitles.has(titleKey)) {
+            log(`Skipped duplicate: ${title.substring(0, 22)}`);
+            continue;
+          }
+
           let address = 'None';
           for (let l = 1; l < lines.length; l++) {
             const lower = lines[l].toLowerCase();
@@ -254,10 +261,9 @@ async function runTwoGis(config, control, log) {
           const p1Digits = foundPhones[0] ? foundPhones[0].replace(/[^\d]/g, '') : '';
           const p2Digits = foundPhones[1] ? foundPhones[1].replace(/[^\d]/g, '') : '';
 
-          if ((titleKey && seenTitles.has(titleKey)) || 
-              (p1Digits && seenPhones.has(p1Digits)) || 
+          if ((p1Digits && seenPhones.has(p1Digits)) || 
               (p2Digits && seenPhones.has(p2Digits))) {
-            log(`Skipped duplicate: ${title.substring(0, 22)}`);
+            log(`Skipped duplicate (Phone): ${title.substring(0, 22)}`);
           } else {
             await csvWriter.writeRecords([{
               query: q,
