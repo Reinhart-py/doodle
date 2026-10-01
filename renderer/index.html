@@ -398,6 +398,20 @@ body {
             <span class="text-xs font-bold text-gray-800">View →</span>
           </button>
         </div>
+        </div>
+
+        <div class="mt-6 pt-6 border-t border-gray-200/60">
+          <h4 class="text-sm font-extrabold text-gray-900 mb-1">Advanced Settings</h4>
+          <p class="text-[11px] text-gray-500 mb-4">Warning: Enabling multiple concurrent sessions may cause significant lag or crash on low-tier devices.</p>
+          <label class="flex items-center gap-3 cursor-pointer select-none">
+            <div class="relative">
+              <input type="checkbox" id="toggle-multisession" class="sr-only" onchange="toggleMultiSession(this.checked)">
+              <div class="block bg-gray-200 w-10 h-6 rounded-full transition-colors shadow-inner" id="multisession-bg"></div>
+              <div class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform shadow-sm" id="multisession-dot"></div>
+            </div>
+            <span class="text-xs font-bold text-gray-700">Enable Multiple Concurrent Sessions</span>
+          </label>
+        </div>
       </div>
     </div>
 
@@ -407,6 +421,22 @@ body {
 <script>
 let activeTab = 'dashboard';
 let totalSavedCounter = 0;
+let allowMultiSession = false;
+
+function toggleMultiSession(enabled) {
+  allowMultiSession = enabled;
+  const bg = document.getElementById('multisession-bg');
+  const dot = document.getElementById('multisession-dot');
+  if (enabled) {
+    bg.classList.remove('bg-gray-200');
+    bg.classList.add('bg-emerald-500');
+    dot.style.transform = 'translateX(100%)';
+  } else {
+    bg.classList.add('bg-gray-200');
+    bg.classList.remove('bg-emerald-500');
+    dot.style.transform = 'translateX(0)';
+  }
+}
 
 function switchTab(name) {
   activeTab = name;
@@ -564,10 +594,23 @@ async function loadHistoryList() {
 
 function setTaskRunning(running) {
   const stopBtn = document.getElementById('global-stop-btn');
+  const gmBtn = document.getElementById('gmaps-start-btn');
+  const tgBtn = document.getElementById('twogis-start-btn');
+
   if (running) {
     stopBtn.classList.remove('hidden');
+    if (!allowMultiSession) {
+      gmBtn.disabled = true;
+      tgBtn.disabled = true;
+      gmBtn.innerHTML = '<span class="animate-pulse">Generating...</span>';
+      tgBtn.innerHTML = '<span class="animate-pulse">Generating...</span>';
+    }
   } else {
     stopBtn.classList.add('hidden');
+    gmBtn.disabled = false;
+    tgBtn.disabled = false;
+    gmBtn.innerText = 'Start Generating';
+    tgBtn.innerText = 'Start Generating';
   }
 }
 
