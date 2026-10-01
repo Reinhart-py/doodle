@@ -1,4 +1,4 @@
-# Kiri
+# Kiri ( doodle ) lead creator tool with tradional old method 
 
 Desktop B2B lead generation tool built with Electron and Playwright. Designed to scrape verified contact numbers, company categories, and business addresses directly from Google Maps and 2GIS.
 
