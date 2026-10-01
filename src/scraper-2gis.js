@@ -257,7 +257,6 @@ async function runTwoGis(config, control, log) {
 
           let category = lines.length > 1 ? lines[1] : 'General Business';
           
-          const titleKey = title.toLowerCase().replace(/[^a-z0-9]/g, '');
           const p1Digits = foundPhones[0] ? foundPhones[0].replace(/[^\d]/g, '') : '';
           const p2Digits = foundPhones[1] ? foundPhones[1].replace(/[^\d]/g, '') : '';
 
