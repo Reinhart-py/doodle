@@ -60,9 +60,41 @@ body {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.16);
 }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+@keyframes slideFade {
+  from { opacity: 0; transform: translateX(8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.tab-content {
+  animation: slideFade 0.25s ease-out forwards;
+}
+@keyframes fadeScale {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+.view-transition {
+  animation: fadeScale 0.3s ease-out forwards;
+}
+.drag-bar {
+  -webkit-app-region: drag;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  z-index: 9999;
+  pointer-events: none;
+}
 </style>
 </head>
 <body class="p-3 sm:p-5 lg:p-6 flex items-center justify-center select-none overflow-hidden h-screen">
+<div class="drag-bar"></div>
 
 <div id="view-auth" class="w-full max-w-[420px] bg-white rounded-[32px] p-8 sm:p-10 shadow-2xl text-center flex flex-col items-center border border-neutral-100">
   <div class="mb-5 flex items-center justify-center">
@@ -176,17 +208,20 @@ body {
 
   <section class="flex-1 bg-brand-surface rounded-t-[32px] lg:rounded-t-none lg:rounded-l-[32px] p-5 sm:p-6 lg:p-7 overflow-y-auto flex flex-col justify-between">
 
-    <div id="tab-dashboard" class="space-y-5">
+    <div id="tab-dashboard" class="space-y-5 tab-content">
       <header class="flex items-center justify-between pb-4 border-b border-gray-200/60">
         <div>
           <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
           <p class="text-xs text-gray-500 mt-0.5">Overview of your leads and search progress</p>
         </div>
-        <div class="flex items-center gap-3">
-          <span id="status-badge" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-            Ready
-          </span>
+        <div class="flex items-center gap-4">
+          <div id="status-badge" class="flex items-center gap-2.5 text-sm font-semibold text-gray-400">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 hidden" id="status-ping"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" id="status-dot"></span>
+            </span>
+            <span id="status-text">Ready</span>
+          </div>
           <button id="global-stop-btn" onclick="window.stopTask()" class="hidden px-4 py-1.5 rounded-full text-xs font-bold bg-rose-500 hover:bg-rose-600 text-white transition-all shadow-sm">
             Stop
           </button>
@@ -253,21 +288,30 @@ body {
         </article>
       </div>
 
-      <article class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between space-y-3">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <h2 class="text-sm font-bold text-gray-900">Activity Log</h2>
-          </div>
-          <button onclick="document.getElementById('console-stream').innerHTML=''" class="text-[11px] font-medium text-gray-400 hover:text-gray-700">Clear</button>
+      <article class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col h-80">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-sm font-bold text-gray-900">Live Progress</h2>
+          <button onclick="document.getElementById('console-stream').innerHTML=''" class="text-xs font-semibold text-gray-400 hover:text-gray-700 transition-colors">Clear list</button>
         </div>
-        <div id="console-stream" class="w-full h-72 bg-[#0C1412] text-emerald-400 font-mono text-xs rounded-xl p-4 overflow-y-auto leading-relaxed border border-emerald-950/60 shadow-inner space-y-1">
-          <div class="text-gray-500">Ready. Choose Google Maps or 2GIS to begin.</div>
+        <div id="console-stream" class="flex-1 overflow-y-auto space-y-2 pr-2">
+          <div class="flex flex-col items-center justify-center h-full text-center space-y-3 px-4 welcome-msg">
+            <div class="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center">
+              <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-gray-900">How to start generating leads</h3>
+              <p class="text-xs text-gray-500 mt-1 leading-relaxed">
+                1. Click <b>Google Maps</b> or <b>2GIS</b> on the left menu.<br/>
+                2. Type what you want to search for.<br/>
+                3. Click the <b>Start Generating</b> button.
+              </p>
+            </div>
+          </div>
         </div>
       </article>
     </div>
 
-    <div id="tab-gmaps" class="hidden space-y-5">
+    <div id="tab-gmaps" class="hidden space-y-5 tab-content">
       <header class="pb-4 border-b border-gray-200/60">
         <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Google Maps</h1>
         <p class="text-xs text-gray-500 mt-0.5">Find businesses, phone numbers, and websites from Google Maps</p>
@@ -291,12 +335,12 @@ body {
         </div>
 
         <button onclick="window.startGmapsTask()" id="gmaps-start-btn" class="px-6 py-3.5 rounded-xl bg-black hover:bg-neutral-800 text-white font-bold text-xs tracking-wide transition-all shadow-md">
-          Start Scraping
+          Start Generating
         </button>
       </div>
     </div>
 
-    <div id="tab-twogis" class="hidden space-y-5">
+    <div id="tab-twogis" class="hidden space-y-5 tab-content">
       <header class="pb-4 border-b border-gray-200/60">
         <h1 class="text-2xl font-bold text-gray-900 tracking-tight">2GIS</h1>
         <p class="text-xs text-gray-500 mt-0.5">Extract business contacts from 2GIS across UAE cities</p>
@@ -320,12 +364,12 @@ body {
         </div>
 
         <button onclick="window.startTwoGisTask()" id="twogis-start-btn" class="px-6 py-3.5 rounded-xl bg-black hover:bg-neutral-800 text-white font-bold text-xs tracking-wide transition-all shadow-md">
-          Start Scraping
+          Start Generating
         </button>
       </div>
     </div>
 
-    <div id="tab-history" class="hidden space-y-5">
+    <div id="tab-history" class="hidden space-y-5 tab-content">
       <header class="pb-4 border-b border-gray-200/60">
         <h1 class="text-2xl font-bold text-gray-900 tracking-tight">History</h1>
         <p class="text-xs text-gray-500 mt-0.5">Pick up any task right where it left off</p>
@@ -336,7 +380,7 @@ body {
       </div>
     </div>
 
-    <div id="tab-developer" class="hidden space-y-5">
+    <div id="tab-developer" class="hidden space-y-5 tab-content">
       <header class="pb-4 border-b border-gray-200/60">
         <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Developer</h1>
         <p class="text-xs text-gray-500 mt-0.5">Author contact and information</p>
@@ -413,9 +457,36 @@ function switchTab(name) {
 
 function appendLog(line) {
   const stream = document.getElementById('console-stream');
+  
+  // Remove welcome guide when real logs appear
+  const welcomeMsg = stream.querySelector('.welcome-msg');
+  if (welcomeMsg) {
+    stream.innerHTML = '';
+  }
+
   const div = document.createElement('div');
-  div.className = 'leading-relaxed break-words';
-  div.innerText = line;
+  
+  let dotColor = 'bg-gray-400';
+  let bgColor = 'bg-gray-50';
+  let textColor = 'text-gray-600';
+  
+  if (line.includes('Saved #')) {
+    dotColor = 'bg-emerald-500';
+    bgColor = 'bg-emerald-50';
+    textColor = 'text-emerald-800 font-medium';
+  } else if (line.includes('Error') || line.includes('Failed')) {
+    dotColor = 'bg-rose-500';
+    bgColor = 'bg-rose-50';
+    textColor = 'text-rose-800';
+  } else if (line.includes('Skipped duplicate')) {
+    dotColor = 'bg-amber-400';
+    bgColor = 'bg-amber-50/50';
+    textColor = 'text-amber-700';
+  }
+  
+  div.className = `flex items-start gap-3 p-3 rounded-xl ${bgColor} ${textColor} text-sm transition-all animate-fade-in`;
+  div.innerHTML = `<div class="mt-1.5 w-1.5 h-1.5 rounded-full ${dotColor} shrink-0"></div><div class="flex-1 leading-relaxed break-words">${line}</div>`;
+  
   stream.appendChild(div);
   stream.scrollTop = stream.scrollHeight;
 
@@ -450,7 +521,9 @@ async function submitAuth() {
 
 function showDashboard(userData) {
   document.getElementById('view-auth').classList.add('hidden');
-  document.getElementById('view-app').classList.remove('hidden');
+  const appView = document.getElementById('view-app');
+  appView.classList.remove('hidden');
+  appView.classList.add('view-transition');
 
   document.getElementById('sidebar-owner-name').innerText = userData.owner || 'Reinhart';
   document.getElementById('sidebar-expiry-text').innerText = userData.expires || 'Active';
@@ -463,7 +536,9 @@ function showDashboard(userData) {
 
 function showAuthScreen(errorMsg = '') {
   document.getElementById('view-app').classList.add('hidden');
-  document.getElementById('view-auth').classList.remove('hidden');
+  const authView = document.getElementById('view-auth');
+  authView.classList.remove('hidden');
+  authView.classList.add('view-transition');
   if (errorMsg) {
     document.getElementById('auth-error').innerText = errorMsg;
   }
@@ -530,20 +605,28 @@ async function loadHistoryList() {
 }
 
 function setTaskRunning(running) {
-  const badge = document.getElementById('status-badge');
+  const statusPing = document.getElementById('status-ping');
+  const statusDot = document.getElementById('status-dot');
+  const statusText = document.getElementById('status-text');
   const stopBtn = document.getElementById('global-stop-btn');
   const gmBtn = document.getElementById('gmaps-start-btn');
   const tgBtn = document.getElementById('twogis-start-btn');
 
   if (running) {
-    badge.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200';
-    badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> Scraping';
+    statusPing.classList.remove('hidden');
+    statusDot.className = 'relative inline-flex rounded-full h-2 w-2 bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]';
+    statusText.innerText = 'Generating leads right now...';
+    statusText.className = 'text-amber-500';
+    
     stopBtn.classList.remove('hidden');
     gmBtn.disabled = true;
     tgBtn.disabled = true;
   } else {
-    badge.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200';
-    badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500"></span> Ready';
+    statusPing.classList.add('hidden');
+    statusDot.className = 'relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]';
+    statusText.innerText = 'Ready';
+    statusText.className = 'text-gray-400';
+    
     stopBtn.classList.add('hidden');
     gmBtn.disabled = false;
     tgBtn.disabled = false;

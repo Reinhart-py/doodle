@@ -58,15 +58,45 @@ async function getBrowser() {
 }
 
 function rankPhones(phones) {
+  function getDigits(p) {
+    return p.replace(/[^\d+]/g, '');
+  }
+
   function score(p) {
-    const clean = p.replace(/[^\d+]/g, '');
+    const clean = getDigits(p);
     if (clean.startsWith('+9715') || clean.startsWith('009715') || clean.startsWith('05')) return 0;
     if (/^(\+91|91|0)?[6-9]\d{9}$/.test(clean)) return 1;
     if (clean.startsWith('+447') || clean.startsWith('07')) return 2;
     if (/800|\+971800|1800/.test(clean)) return 10;
     return 5;
   }
-  const unique = Array.from(new Set(phones.map((p) => p.trim()).filter(Boolean)));
+
+  const uniqueMap = new Map();
+  for (const p of phones) {
+    if (!p) continue;
+    const digits = getDigits(p);
+    if (digits.replace(/[^\d]/g, '').length < 7) continue; // Ignore garbage or very short strings
+
+    if (!uniqueMap.has(digits)) {
+      uniqueMap.set(digits, p.trim());
+    } else {
+      const existing = uniqueMap.get(digits);
+      // Prefer nicely spaced format from Gmaps over raw tel: strings
+      if (p.includes(' ') && !existing.includes(' ')) {
+        uniqueMap.set(digits, p.trim());
+      }
+    }
+  }
+
+  const unique = Array.from(uniqueMap.values()).map(p => {
+    // Add space formatting to prevent Excel Scientific Notation (e.g. 9.72E+11)
+    if (!p.includes(' ') && !p.includes('-')) {
+      if (p.startsWith('+')) return p.substring(0, 4) + ' ' + p.substring(4);
+      return p.substring(0, 3) + ' ' + p.substring(3);
+    }
+    return p;
+  });
+
   return unique.sort((a, b) => score(a) - score(b));
 }
 
@@ -84,7 +114,7 @@ async function extractActivePane(page) {
   try {
     const titleEl = await page.$('h1.DUwDvf');
     if (titleEl) {
-      data.title = (await titleEl.innerText()).trim();
+      data.title = (await titleEl.innerText()).replace(/\r?\n/g, ' ').trim();
     }
   } catch {}
 
@@ -95,8 +125,18 @@ async function extractActivePane(page) {
       try {
         const text = await el.innerText();
         const href = await el.getAttribute('href');
-        if (text) rawPhones.push(text.replace('Phone:', '').trim());
-        if (href && href.startsWith('tel:')) rawPhones.push(href.replace('tel:', '').trim());
+        if (text) {
+          const cleanedText = text.replace(/Phone:/i, '').replace(/[^\d+ \-()]/g, '').trim();
+          if (cleanedText.replace(/[^\d]/g, '').length >= 7) {
+            rawPhones.push(cleanedText);
+          }
+        }
+        if (href && href.startsWith('tel:')) {
+          const tel = href.replace('tel:', '').trim();
+          if (tel.replace(/[^\d]/g, '').length >= 7) {
+            rawPhones.push(tel);
+          }
+        }
       } catch {}
     }
     const ranked = rankPhones(rawPhones);
@@ -107,7 +147,7 @@ async function extractActivePane(page) {
   try {
     const addrEl = await page.$('button[data-item-id="address"], button[aria-label*="Address"]');
     if (addrEl) {
-      data.address = (await addrEl.innerText()).replace('Address:', '').trim();
+      data.address = (await addrEl.innerText()).replace('Address:', '').replace(/\r?\n/g, ' ').trim();
     }
   } catch {}
 
@@ -121,7 +161,7 @@ async function extractActivePane(page) {
   try {
     const ratingEl = await page.$('div.F7nice span[aria-hidden="true"]');
     if (ratingEl) {
-      data.rating = (await ratingEl.innerText()).trim();
+      data.rating = (await ratingEl.innerText()).replace(/\r?\n/g, ' ').trim();
     }
     const revsEl = await page.$('div.F7nice span[aria-label*="reviews"]');
     if (revsEl) {
@@ -195,6 +235,39 @@ async function runGmaps(config, control, log) {
   const csvPath = path.join(getExportsDir(), `gmaps_${baseFileName}.csv`);
   const fileExists = fs.existsSync(csvPath);
 
+  const seenPhones = new Set();
+  const seenTitles = new Set();
+
+  if (fileExists) {
+    try {
+      const content = fs.readFileSync(csvPath, 'utf8');
+      const lines = content.split(/\r?\n/);
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line.trim()) continue;
+        
+        // CSV columns: Query, Business Name (1), Primary Phone (2), Secondary Phone (3)
+        const matchTitle = line.match(/^[^,]*,([^,]+)/);
+        if (matchTitle) {
+          const t = matchTitle[1].replace(/"/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+          if (t) seenTitles.add(t);
+        }
+        
+        const phones = line.match(/\+?\d[\d \-]{6,}\d/g);
+        if (phones) {
+          for (const p of phones) {
+            seenPhones.add(p.replace(/[^\d]/g, ''));
+          }
+        }
+      }
+    } catch {}
+  }
+
+  // Write UTF-8 BOM if file doesn't exist to prevent Excel Mojibake / column shifts
+  if (!fileExists) {
+    fs.writeFileSync(csvPath, '\uFEFFQuery,Business Name,Primary Phone,Secondary Phone,Website,Address,Rating,Reviews\n', 'utf8');
+  }
+
   const csvWriter = createCsvWriter({
     path: csvPath,
     header: [
@@ -207,7 +280,7 @@ async function runGmaps(config, control, log) {
       { id: 'rating', title: 'Rating' },
       { id: 'reviews', title: 'Reviews' }
     ],
-    append: fileExists
+    append: true
   });
 
   saveHistoryItem({
@@ -253,9 +326,22 @@ async function runGmaps(config, control, log) {
       if (page.url().includes('/maps/place/')) {
         const details = await extractActivePane(page);
         if (details.title && details.title !== 'Unknown') {
-          await csvWriter.writeRecords([{ query: q, ...details }]);
-          totalSaved++;
-          log(`Saved #${totalSaved}: ${details.title} | ${details.phone_1}`);
+          const titleKey = details.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const p1Digits = details.phone_1 ? details.phone_1.replace(/[^\d]/g, '') : '';
+          const p2Digits = details.phone_2 ? details.phone_2.replace(/[^\d]/g, '') : '';
+          
+          if ((titleKey && seenTitles.has(titleKey)) || 
+              (p1Digits && seenPhones.has(p1Digits)) || 
+              (p2Digits && seenPhones.has(p2Digits))) {
+            log(`Skipped duplicate: ${details.title.substring(0, 24)}`);
+          } else {
+            await csvWriter.writeRecords([{ query: q, ...details }]);
+            totalSaved++;
+            if (titleKey) seenTitles.add(titleKey);
+            if (p1Digits) seenPhones.add(p1Digits);
+            if (p2Digits) seenPhones.add(p2Digits);
+            log(`Saved #${totalSaved}: ${details.title} | ${details.phone_1}`);
+          }
         }
         updateProgress('gmaps', target, i + 1, totalSaved);
         continue;
@@ -304,9 +390,22 @@ async function runGmaps(config, control, log) {
 
               const details = await extractActivePane(page);
               if (details.title && details.title !== 'Unknown') {
-                await csvWriter.writeRecords([{ query: q, ...details }]);
-                totalSaved++;
-                log(`Saved #${totalSaved}: ${details.title.substring(0, 24)} | ${details.phone_1}`);
+                const titleKey = details.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+                const p1Digits = details.phone_1 ? details.phone_1.replace(/[^\d]/g, '') : '';
+                const p2Digits = details.phone_2 ? details.phone_2.replace(/[^\d]/g, '') : '';
+                
+                if ((titleKey && seenTitles.has(titleKey)) || 
+                    (p1Digits && seenPhones.has(p1Digits)) || 
+                    (p2Digits && seenPhones.has(p2Digits))) {
+                  log(`Skipped duplicate: ${details.title.substring(0, 24)}`);
+                } else {
+                  await csvWriter.writeRecords([{ query: q, ...details }]);
+                  totalSaved++;
+                  if (titleKey) seenTitles.add(titleKey);
+                  if (p1Digits) seenPhones.add(p1Digits);
+                  if (p2Digits) seenPhones.add(p2Digits);
+                  log(`Saved #${totalSaved}: ${details.title.substring(0, 24)} | ${details.phone_1}`);
+                }
               }
 
               await returnToFeed(page);
