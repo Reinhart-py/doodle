@@ -286,7 +286,7 @@ body {
         <div>
           <label class="block text-xs font-extrabold text-gray-700 uppercase tracking-wider mb-2.5">Search Query, Maps Link, or Batch File</label>
           <div class="flex gap-2">
-            <input id="gmaps-input" type="text" class="flex-1 bg-gray-50 border border-gray-200/80 rounded-xl px-4 py-3.5 text-sm text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-inner" placeholder="e.g. Software companies in Business Bay" value="Software in Business Bay"/>
+            <input id="gmaps-input" type="text" list="lead-categories" class="flex-1 bg-gray-50 border border-gray-200/80 rounded-xl px-4 py-3.5 text-sm text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-inner" placeholder="e.g. Software companies in Business Bay" value="Software in Business Bay"/>
             <button onclick="window.pickFile()" class="px-5 py-3.5 rounded-xl bg-gradient-to-br from-gray-800 to-black hover:from-black hover:to-black text-white font-bold text-xs transition-all shadow-md border border-gray-700/50">
               Browse File
             </button>
@@ -320,7 +320,7 @@ body {
           <div>
             <label class="block text-xs font-extrabold text-gray-700 uppercase tracking-wider mb-2.5">Keyword or Batch File</label>
             <div class="flex gap-2">
-              <input id="twogis-query" type="text" class="flex-1 w-full bg-gray-50 border border-gray-200/80 rounded-xl px-4 py-3.5 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-inner" value="Software"/>
+              <input id="twogis-query" type="text" list="lead-categories" class="flex-1 w-full bg-gray-50 border border-gray-200/80 rounded-xl px-4 py-3.5 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-inner" value="Software"/>
               <button onclick="window.pickFileTwoGis()" class="px-4 py-3.5 rounded-xl bg-gradient-to-br from-gray-800 to-black hover:from-black hover:to-black text-white font-bold text-xs transition-all shadow-md border border-gray-700/50">
                 Browse
               </button>
@@ -698,5 +698,211 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 });
 </script>
+
+<datalist id="lead-categories">
+  <!-- IT, Software, Digital -->
+  <option value="IT companies">
+  <option value="Software development">
+  <option value="Web development">
+  <option value="Mobile app development">
+  <option value="Digital marketing agency">
+  <option value="SEO agency">
+  <option value="Advertising agency">
+  <option value="SMM agency">
+  <option value="Web design">
+  <option value="Graphic design">
+  <option value="IT consulting">
+  <option value="Software store">
+  <option value="Computer repair">
+  <option value="Web hosting">
+  <option value="IT equipment supplier">
+  <option value="Cybersecurity company">
+  <option value="Data center">
+  <option value="Cloud services">
+  <option value="CRM integration">
+  <option value="ERP implementation">
+  <!-- Agencies and marketing -->
+  <option value="Marketing agency">
+  <option value="Digital agency">
+  <option value="Branding agency">
+  <option value="PR agency">
+  <option value="Media agency">
+  <option value="Printing house">
+  <option value="Signboard maker">
+  <option value="Promotional products supplier">
+  <option value="Photography studio">
+  <option value="Video production">
+  <option value="Event management company">
+  <option value="Exhibition organizer">
+  <option value="Influencer agency">
+  <option value="Content agency">
+  <!-- Business services -->
+  <option value="Business consultant">
+  <option value="Accounting firm">
+  <option value="Audit firm">
+  <option value="Tax consultant">
+  <option value="Legal services">
+  <option value="Law firm">
+  <option value="Company registration services">
+  <option value="HR agency">
+  <option value="Recruitment agency">
+  <option value="Staffing agency">
+  <option value="Payroll services">
+  <option value="Translation agency">
+  <option value="Document attestation">
+  <option value="Business center">
+  <option value="Virtual office">
+  <option value="Coworking space">
+  <option value="Office rental">
+  <option value="Meeting room rental">
+  <!-- Finance, insurance, real estate -->
+  <option value="Bank">
+  <option value="NBFC">
+  <option value="Microfinance company">
+  <option value="Loan broker">
+  <option value="Insurance company">
+  <option value="Insurance agent">
+  <option value="Investment company">
+  <option value="Financial consultant">
+  <option value="Chartered accountant">
+  <option value="Real estate agency">
+  <option value="Property developer">
+  <option value="Construction company">
+  <option value="Interior designer">
+  <option value="Architect">
+  <option value="Land surveyor">
+  <option value="Property management company">
+  <!-- Manufacturing and wholesale -->
+  <option value="Manufacturer">
+  <option value="Industrial supplier">
+  <option value="Wholesale supplier">
+  <option value="Trading company">
+  <option value="Importer">
+  <option value="Exporter">
+  <option value="Distributor">
+  <option value="Packaging manufacturer">
+  <option value="Printing and packaging">
+  <option value="Plastic manufacturer">
+  <option value="Metal fabrication">
+  <option value="Steel supplier">
+  <option value="Hardware supplier">
+  <option value="Electrical equipment supplier">
+  <option value="Industrial machinery">
+  <option value="Spare parts supplier">
+  <option value="Textile manufacturer">
+  <option value="Garment manufacturer">
+  <option value="Furniture manufacturer">
+  <option value="Chemical supplier">
+  <!-- Logistics and vehicles -->
+  <option value="Logistics company">
+  <option value="Transport company">
+  <option value="Courier service">
+  <option value="Freight forwarder">
+  <option value="Warehouse">
+  <option value="Cold storage">
+  <option value="Moving company">
+  <option value="Packers and movers">
+  <option value="Truck rental">
+  <option value="Bus rental">
+  <option value="Car rental">
+  <option value="Cargo transport">
+  <option value="Fleet management">
+  <option value="Fuel station">
+  <option value="Auto dealer">
+  <option value="Car dealer">
+  <option value="Bike dealer">
+  <option value="Auto parts supplier">
+  <option value="Car service center">
+  <option value="Tyre shop">
+  <!-- Retail and trade -->
+  <option value="Supermarket">
+  <option value="Hypermarket">
+  <option value="Wholesale market">
+  <option value="Electronics store">
+  <option value="Mobile phone shop">
+  <option value="Computer store">
+  <option value="Furniture store">
+  <option value="Home appliance store">
+  <option value="Building materials supplier">
+  <option value="Sanitary ware store">
+  <option value="Tile shop">
+  <option value="Paint shop">
+  <option value="Fashion store">
+  <option value="Footwear store">
+  <option value="Jewelry store">
+  <option value="Opticals">
+  <option value="Pharmacy">
+  <option value="Medical equipment supplier">
+  <option value="Stationery supplier">
+  <option value="Gift shop">
+  <!-- Hospitality and food -->
+  <option value="Restaurant">
+  <option value="Cafe">
+  <option value="Hotel">
+  <option value="Resort">
+  <option value="Banquet hall">
+  <option value="Catering service">
+  <option value="Food manufacturer">
+  <option value="Food distributor">
+  <option value="Bakery">
+  <option value="Sweet shop">
+  <option value="Cloud kitchen">
+  <option value="Food delivery">
+  <option value="Party supplies">
+  <option value="Wedding planner">
+  <option value="Event venue">
+  <option value="Coffee roaster">
+  <option value="Beverage distributor">
+  <option value="Juice factory">
+  <!-- Healthcare and wellness -->
+  <option value="Hospital">
+  <option value="Clinic">
+  <option value="Dental clinic">
+  <option value="Diagnostic lab">
+  <option value="Pathology lab">
+  <option value="Pharmaceutical company">
+  <option value="Medical distributor">
+  <option value="Veterinary clinic">
+  <option value="Physiotherapy clinic">
+  <option value="Gym">
+  <option value="Fitness center">
+  <option value="Yoga studio">
+  <option value="Wellness center">
+  <option value="Beauty salon">
+  <option value="Spa">
+  <option value="Cosmetic clinic">
+  <!-- Education and training -->
+  <option value="School">
+  <option value="College">
+  <option value="Coaching institute">
+  <option value="Training center">
+  <option value="Computer training institute">
+  <option value="English speaking institute">
+  <option value="Skill development center">
+  <option value="Study abroad consultant">
+  <option value="Career counselor">
+  <option value="Nursery school">
+  <option value="Daycare center">
+  <option value="Sports academy">
+  <option value="Music school">
+  <option value="Dance school">
+  <option value="Robotics training">
+  <option value="Digital marketing training">
+  <!-- Construction and industrial -->
+  <option value="Civil contractor">
+  <option value="Electrical contractor">
+  <option value="Plumbing contractor">
+  <option value="HVAC contractor">
+  <option value="Solar energy company">
+  <option value="Solar panel installer">
+  <option value="Security systems installer">
+  <option value="CCTV installer">
+  <option value="Fire safety company">
+  <option value="Water treatment company">
+  <option value="Generator supplier">
+  <option value="Machine shop">
+  <option value="Fabrication workshop">
+</datalist>
+
 </body>
 </html>

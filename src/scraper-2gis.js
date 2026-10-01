@@ -1,8 +1,42 @@
 const { chromium } = require('playwright-core');
 const fs = require('fs');
 const path = require('path');
+const xlsx = require('xlsx');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const { getExportsDir, updateProgress, saveHistoryItem } = require('./storage');
+
+function loadTargetList(targetInput) {
+  const clean = targetInput.replace(/["']/g, '').trim();
+  if (fs.existsSync(clean) && fs.statSync(clean).isFile()) {
+    const ext = path.extname(clean).toLowerCase();
+    if (ext === '.csv') {
+      const content = fs.readFileSync(clean, 'utf8');
+      return content
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(Boolean);
+    }
+    if (ext === '.xlsx' || ext === '.xls') {
+      const workbook = xlsx.readFile(clean);
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const json = xlsx.utils.sheet_to_json(firstSheet, { header: 1 });
+      const items = [];
+      for (const row of json) {
+        if (Array.isArray(row)) {
+          const combined = row.map((cell) => String(cell || '').trim()).filter(Boolean).join(' ');
+          if (combined) items.push(combined);
+        }
+      }
+      return items.length ? items : [clean];
+    }
+    const content = fs.readFileSync(clean, 'utf8');
+    return content
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+  }
+  return [clean];
+}
 
 async function getBrowser() {
   const launchOptions = {
@@ -37,7 +71,6 @@ function buildSearchUrl(city, query) {
 
 async function runTwoGis(config, control, log) {
   const { city, query, cap = 0, initialSaved = 0 } = config;
-  const { loadTargetList, getExportsDir, updateProgress, saveHistoryItem } = require('./storage');
   
   const queries = loadTargetList(query);
   let startIdx = Number(config.startIdx) || 0;
@@ -51,6 +84,8 @@ async function runTwoGis(config, control, log) {
   const csvPath = path.join(getExportsDir(), `2gis_${safeName}.csv`);
   const seenPhones = new Set();
   const seenTitles = new Set();
+
+  const fileExists = fs.existsSync(csvPath);
 
   if (fileExists) {
     try {
